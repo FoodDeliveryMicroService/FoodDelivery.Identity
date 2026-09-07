@@ -1,0 +1,167 @@
+﻿using System.Threading.RateLimiting;
+using Identity.API.Middlewares;
+using Identity.API.Services;
+using Identity.Application.Common.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.OpenApi.Models;
+
+namespace Identity.API;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddPresentationServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services
+            .AddApiDocumentation()
+            .AddAppCors(configuration)
+            .AddAppOutputCaching()
+            .AddAppHealthChecks(configuration)
+            .AddExceptionHandling()
+            .AddCustomProblemDetails()
+            .AddAppRateLimiting()
+            .AddCurrentUserService();
+
+        return services;
+    }
+
+    private static IServiceCollection AddApiDocumentation(
+        this IServiceCollection services)
+    {
+        services.AddSwaggerGen(options =>
+        {
+            options.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "Identity Service API",
+                Version = "v1"
+            });
+
+            var jwtSecurityScheme = new OpenApiSecurityScheme
+            {
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
+                Description = "Enter JWT Bearer token",
+
+                Reference = new OpenApiReference
+                {
+                    Id = JwtBearerDefaults.AuthenticationScheme,
+                    Type = ReferenceType.SecurityScheme
+                }
+            };
+
+            options.AddSecurityDefinition(
+                JwtBearerDefaults.AuthenticationScheme,
+                jwtSecurityScheme);
+
+            options.AddSecurityRequirement(
+                new OpenApiSecurityRequirement
+                {
+            {
+                jwtSecurityScheme,
+                Array.Empty<string>()
+            }
+                });
+        });
+        return services;
+    }
+
+    private static IServiceCollection AddAppCors(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddCors(options =>
+        {
+            options.AddPolicy("DefaultCorsPolicy", builder =>
+            {
+                var allowedOrigins =
+                    configuration
+                        .GetSection("Cors:AllowedOrigins")
+                        .Get<string[]>() ?? [];
+
+                if (allowedOrigins.Length > 0)
+                {
+                    builder.WithOrigins(allowedOrigins)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                }
+            });
+        });
+
+        return services;
+    }
+
+    private static IServiceCollection AddAppOutputCaching(
+        this IServiceCollection services)
+    {
+        services.AddOutputCache(options =>
+        {
+            options.AddPolicy(
+                "DefaultCache",
+                policy => policy.Expire(TimeSpan.FromMinutes(1)));
+        });
+
+        return services;
+    }
+
+    private static IServiceCollection AddAppHealthChecks(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+        services
+            .AddHealthChecks()
+            .AddSqlServer(connectionString!);
+
+        return services;
+    }
+
+    private static IServiceCollection AddExceptionHandling(this IServiceCollection services)
+    {
+        services.AddExceptionHandler<GlobalExceptionHandler>();
+        return services;
+    }
+    private static IServiceCollection AddCustomProblemDetails(this IServiceCollection services)
+    {
+        services.AddProblemDetails(options => options.CustomizeProblemDetails = (context) =>
+        {
+            context.ProblemDetails.Instance = $"{context.HttpContext.Request.Method} {context.HttpContext.Request.Path}";
+            context.ProblemDetails.Extensions.Add("requestId", context.HttpContext.TraceIdentifier);
+        });
+
+        return services;
+    }
+    private static IServiceCollection AddAppRateLimiting(this IServiceCollection services)
+    {
+        services.AddRateLimiter(options =>
+        {
+            options.AddSlidingWindowLimiter("SlidingWindow", limiterOptions =>
+            {
+                limiterOptions.PermitLimit = 100;
+                limiterOptions.Window = TimeSpan.FromMinutes(1);
+                limiterOptions.SegmentsPerWindow = 6;
+                limiterOptions.QueueLimit = 10;
+                limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                limiterOptions.AutoReplenishment = true;
+            });
+
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        });
+
+        return services;
+    }
+
+    private static IServiceCollection AddCurrentUserService(
+        this IServiceCollection services)
+    {
+        services.AddHttpContextAccessor();
+        services.AddScoped<IUser, CurrentUser>();
+        return services;
+    }
+
+}
