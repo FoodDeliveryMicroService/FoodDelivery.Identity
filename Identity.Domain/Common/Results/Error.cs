@@ -46,5 +46,12 @@ namespace Identity.Domain.Common.Results
 
         public static Error Create(int type, string code, string description)
             => new(code, description, (ErrorKind)type);
+
+        public static Error BadRequest(string code = nameof(BadRequest), string description = "Bad request.")
+            => new(code, description, ErrorKind.Validation);
+
+        public static Error TooManyRequests(string code = nameof(TooManyRequests), string description = "Too Many Requests.")
+            => new(code, description, ErrorKind.TooManyRequests);
+
     }
 }
