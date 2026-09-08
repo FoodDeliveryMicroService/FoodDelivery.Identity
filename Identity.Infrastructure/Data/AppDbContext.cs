@@ -1,4 +1,5 @@
 ﻿using Identity.Application.Common.Interfaces;
+using Identity.Domain.Email;
 using Identity.Domain.Identity;
 using Identity.Domain.Location;
 using Identity.Infrastructure.Identity;
@@ -12,6 +13,7 @@ namespace Identity.Infrastructure.Data
         : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>(options), IAppDbContext
     {
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<EmailConfirmation> EmailConfirmations => Set<EmailConfirmation>();
         public DbSet<Address> Addresses => Set<Address>();
         public DbSet<City> Cities => Set<City>();
         public DbSet<Governorate> Governorates => Set<Governorate>();

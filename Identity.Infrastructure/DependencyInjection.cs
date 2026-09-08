@@ -131,13 +131,40 @@ namespace Identity.Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.AddIdentity<AppUser, IdentityRole<Guid>>()
-                .AddEntityFrameworkStores<AppDbContext>()
-                .AddDefaultTokenProviders();
+            services.AddIdentity<AppUser, IdentityRole<Guid>>(options =>
+            {
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequiredLength = 8;
+                options.Password.RequiredUniqueChars = 1;
+                options.User.RequireUniqueEmail = true;
+                options.SignIn.RequireConfirmedEmail = false;
+            })
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddDefaultTokenProviders();
 
             services.AddScoped<ITokenProvider, TokenProviderService>();
             services.AddScoped<IIdentityService, IdentityService>();
             services.AddHttpContextAccessor();
+
+            var emailSettings = configuration
+                .GetSection(EmailSettings.SectionName)
+                .Get<EmailSettings>()
+                ?? throw new InvalidOperationException(
+                    $"Configuration section '{EmailSettings.SectionName}' is missing.");
+
+            services
+                .AddFluentEmail(emailSettings.SenderEmail, emailSettings.SenderName)
+                .AddSmtpSender(
+                    emailSettings.SmtpServer,
+                    emailSettings.SmtpPort,
+                    emailSettings.Username,
+                    emailSettings.Password);
+
+            services.AddScoped<IEmailService, EmailService>();
+
             return services;
         }
     }
