@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Identity.Domain.Common.Results;
 
-namespace Identity.Domain.Identity
+namespace Identity.Domain.Identity.Errors
 {
     public static class RefreshTokenErrors
     {
@@ -20,5 +20,10 @@ namespace Identity.Domain.Identity
 
         public static readonly Error ExpiryInvalid =
             Error.Validation("RefreshToken_Expiry_Invalid", "Expiry must be in the future.");
+
+        public static readonly Error AlreadyRevoked =
+            Error.Validation("RefreshToken_AlreadyRevoked", "Refresh token has already been revoked.");
+
+
     }
 }
