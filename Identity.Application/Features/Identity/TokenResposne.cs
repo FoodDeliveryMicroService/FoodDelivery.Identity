@@ -8,8 +8,8 @@ namespace Identity.Application.Features.Identity
 {
     public class TokenResponse
     {
-        public string? AccessToken { get; set; }
-        public string? RefreshToken { get; set; }
-        public DateTime ExpiresOnUtc { get; set; }
+        public string AccessToken { get; set; }
+        public string RefreshToken { get; set; }
+        public DateTimeOffset ExpiresOnUtc { get; set; }
     }
 }

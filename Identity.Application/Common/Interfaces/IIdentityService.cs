@@ -40,5 +40,6 @@ namespace Identity.Application.Common.Interfaces
             CancellationToken cancellationToken = default);
         Task<Result<AppUserDto>> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default);
         Task<bool> IsEmailConfirmedAsync(string email, CancellationToken cancellationToken = default);
+        Task<Result<AppUserDto>> LoginAsync(string email, string password, CancellationToken cancellationToken = default);
     }
 }

@@ -4,15 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Identity.Application.Common.Interfaces;
+using Identity.Application.Features.Authentication.Dtos.Email;
 using Identity.Application.Features.Identity.Dtos;
 using Identity.Domain.Common.Results;
 using Identity.Domain.Email;
+using Identity.Domain.Identity.Errors;
 using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Identity.Application.Features.Authentication.Dtos.Email;
 
 namespace Identity.Infrastructure.Services
 {
@@ -243,6 +244,45 @@ namespace Identity.Infrastructure.Services
                 return false; // or throw, but returning false is safe for the check
 
             return user.EmailConfirmed;
+        }
+        public async Task<Result<AppUserDto>> LoginAsync(
+            string email,
+            string password,
+            CancellationToken cancellationToken = default)
+        {
+            // 1. Find user by email
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user is null)
+            {
+                // Return generic error (don't reveal if email or password is wrong)
+                return AuthenticationErrors.InvalidCredentials;
+            }
+
+            //// 2. Check if account is suspended
+            //if (user.Status == AccountStatus.Suspended)
+            //{
+            //    return AuthenticationErrors.AccountSuspended;
+            //}
+
+            // 3. Check if email is confirmed
+            if (!user.EmailConfirmed)
+            {
+                return AuthenticationErrors.AccountNotConfirmed;
+            }
+
+            // 4. Verify password
+            if (!await _userManager.CheckPasswordAsync(user, password))
+            {
+                return AuthenticationErrors.InvalidCredentials;
+            }
+
+            // 5. Return user DTO
+            return new AppUserDto(
+                user.Id,
+                user.Email!,
+                await _userManager.GetRolesAsync(user),
+                await _userManager.GetClaimsAsync(user)
+            );
         }
     }
 }

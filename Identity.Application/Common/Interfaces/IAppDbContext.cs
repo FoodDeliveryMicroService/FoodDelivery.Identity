@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Identity.Domain.Email;
 using Identity.Domain.Identity;
+using Identity.Domain.Identity.Entities;
 using Identity.Domain.Location;
 using Microsoft.EntityFrameworkCore;
 
