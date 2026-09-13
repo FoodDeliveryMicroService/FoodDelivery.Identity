@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Identity.Domain.Email;
-using Identity.Domain.Identity;
+﻿using Identity.Domain.Email;
 using Identity.Domain.Identity.Entities;
 using Identity.Domain.Location;
 using Microsoft.EntityFrameworkCore;

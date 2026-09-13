@@ -15,13 +15,16 @@ public class EmailConfirmationConfiguration : IEntityTypeConfiguration<EmailConf
         builder.Property(e => e.UserId)
             .IsRequired()
             .HasMaxLength(36); // Assuming GUID string length
-
-        builder.Property(e => e.Code)
+        
+        builder.Property(e => e.CodeHash)
             .IsRequired()
-            .HasMaxLength(6);
+            .HasMaxLength(64);
 
-        builder.Property(e => e.ExpiresAt)
-            .IsRequired();
+        builder.Property(e => e.ExpiresAt).IsRequired().HasComment("the expiration date is required").
+            HasColumnType("datetimeoffset");
+
+        builder.Property(e => e.CreatedAt).IsRequired().HasComment("the creation date is required").
+            HasColumnType("datetimeoffset");
 
         builder.Property(e => e.IsUsed)
             .IsRequired();

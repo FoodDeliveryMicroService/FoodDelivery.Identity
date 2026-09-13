@@ -21,7 +21,11 @@ public sealed class RegisterUserCommandValidator : AbstractValidator<RegisterUse
 
         RuleFor(x => x.Request.Password)
             .NotEmpty().WithMessage("Password is required.")
-            .MinimumLength(6).WithMessage("Password must be at least 6 characters.");
+            .MinimumLength(8).WithMessage("Password must be at least 8 characters.") // was 6
+            .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
+            .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter.")
+            .Matches("[0-9]").WithMessage("Password must contain at least one digit.")
+            .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
 
         RuleFor(x => x.Request.Role)
             .Must(role => role == Role.Customer || role == Role.RestaurantOwner)

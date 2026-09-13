@@ -16,7 +16,7 @@ public interface ITokenProvider
         CancellationToken cancellationToken = default);
 
     Task<Result<Success>> RevokeTokenAsync(
-        string refreshToken,
+        string refreshToken,Guid? userId,
         CancellationToken cancellationToken = default);
 
     ClaimsPrincipal? GetPrincipalFromExpiredToken(

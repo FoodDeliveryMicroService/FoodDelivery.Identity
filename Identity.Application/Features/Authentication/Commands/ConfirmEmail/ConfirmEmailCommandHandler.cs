@@ -1,8 +1,8 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using Identity.Application.Common.Interfaces;
-using Identity.Application.Features.Authentication.Dtos.Email;
 using Identity.Domain.Common.Results;
+using Identity.Domain.Email;
 
 namespace Identity.Application.Features.Authentication.Commands.ConfirmEmail;
 
@@ -17,25 +17,22 @@ public sealed class ConfirmEmailCommandHandler(
     {
         var request = command.Request;
 
-        logger.LogInformation("Confirming email for: {Email}", request.Email);
+        // Parse the registration token — it's a Guid represented as string in the request
+        if (!Guid.TryParse(request.userId, out var registrationToken))
+            return EmailConfirmationErrors.InvalidCode;
 
-        // 1. Find the user by email
-        var userResult = await identityService.GetUserByEmailAsync(request.Email, cancellationToken);
-        if (userResult.IsError)
-            return userResult.Errors;
+        logger.LogInformation("Confirming email for registration token: {Token}", registrationToken);
 
-        var user = userResult.Value;
-
-        // 2. Confirm the email with the code
+        // Single call — no more email lookup + separate ID lookup (fixes ARC-03)
         var confirmResult = await identityService.ConfirmEmailAsync(
-            user.UserId.ToString(),
+            registrationToken,
             request.Code,
             cancellationToken);
 
         if (confirmResult.IsError)
             return confirmResult.Errors;
 
-        logger.LogInformation("Email confirmed successfully for: {Email}", request.Email);
+        logger.LogInformation("Email confirmed successfully for registration token: {Token}", registrationToken);
 
         return Result.Success;
     }

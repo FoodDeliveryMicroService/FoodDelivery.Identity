@@ -3,15 +3,13 @@ using Identity.Application.Features.Authentication.Commands.Login;
 using Identity.Application.Features.Authentication.Commands.Logout;
 using Identity.Application.Features.Authentication.Commands.RefreshToken;
 using Identity.Application.Features.Authentication.Commands.RegisterUser;
-using Identity.Application.Features.Authentication.Commands.SendConfirmationCode;
 using Identity.Application.Features.Authentication.Dtos.Email;
 using Identity.Application.Features.Authentication.Dtos.Login;
 using Identity.Application.Features.Authentication.Dtos.Logout;
 using Identity.Application.Features.Authentication.Dtos.RefreshToken;
 using Identity.Application.Features.Authentication.Dtos.RegisterUser;
-using Identity.Domain.Common.Results;
 using MediatR;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Identity.API.Controllers
@@ -112,12 +110,14 @@ namespace Identity.API.Controllers
         }
 
         [HttpPost("logout")]
+        [Authorize(Roles = "Customer,RestaurantOwner")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Logout(
             [FromBody] LogoutRequest request,
             CancellationToken cancellationToken)
         {
+            Console.WriteLine("========== LOGOUT CONTROLLER ENTERED ==========");
             var command = new LogoutCommand(request);
             var result = await _mediator.Send(command, cancellationToken);
 

@@ -2,7 +2,6 @@
 using System.Reflection;
 using CsvHelper;
 using Identity.Domain.Location;
-using Identity.Infrastructure.Data;
 using Identity.Infrastructure.SeedData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
