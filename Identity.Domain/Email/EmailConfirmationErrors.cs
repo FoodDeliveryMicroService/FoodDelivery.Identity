@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Identity.Domain.Common.Results;
+﻿using Identity.Domain.Common.Results;
 
 namespace Identity.Domain.Email
 {
@@ -22,6 +17,8 @@ namespace Identity.Domain.Email
             Error.Failure("Email.CodeGenerationFailed", "Failed to generate confirmation code.");
 
         public static Error TooManyAttempts =>
-            Error.TooManyRequests("Email.TooManyAttempts", "Too many attempts. Please wait 5 minutes.");
+            Error.Validation("Email.TooManyAttempts", "Too many attempts. Please wait 5 minutes.");
+        public static Error TooManyRequests =>
+            Error.TooManyRequests("EmailConfirmation.TooManyRequests",  "Too many codes requested. Please wait before trying again.");
     }
 }

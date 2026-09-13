@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Identity.Application.Features.Authentication.Dtos.Email
+﻿namespace Identity.Application.Features.Authentication.Dtos.Email
 {
-    public sealed record ConfirmEmailRequest(string Email, string Code);
-
+    public sealed record ConfirmEmailRequest(string userId, string Code);
 }

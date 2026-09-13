@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Identity.Application.Features.Authentication.Dtos.Email;
+﻿using Identity.Application.Features.Authentication.Dtos.Email;
 using Identity.Application.Features.Identity.Dtos;
 using Identity.Domain.Common.Results;
 
@@ -35,7 +30,7 @@ namespace Identity.Application.Common.Interfaces
 
         // NEW: Validate and confirm the email
         Task<Result<bool>> ConfirmEmailAsync(
-            string userId,
+            Guid userId,
             string code,
             CancellationToken cancellationToken = default);
         Task<Result<AppUserDto>> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default);

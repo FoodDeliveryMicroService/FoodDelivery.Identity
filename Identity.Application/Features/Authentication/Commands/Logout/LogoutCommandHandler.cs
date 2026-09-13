@@ -7,7 +7,8 @@ namespace Identity.Application.Features.Authentication.Commands.Logout;
 
 public sealed class LogoutCommandHandler(
     ITokenProvider tokenProvider,
-    ILogger<LogoutCommandHandler> logger)
+    ILogger<LogoutCommandHandler> logger,
+    IUser user)
     : IRequestHandler<LogoutCommand, Result<Success>>
 {
     public async Task<Result<Success>> Handle(
@@ -20,7 +21,7 @@ public sealed class LogoutCommandHandler(
 
         // 1. Revoke the refresh token
         var revokeResult = await tokenProvider.RevokeTokenAsync(
-            request.RefreshToken,
+            request.RefreshToken,user.Id,
             cancellationToken);
 
         if (revokeResult.IsError)

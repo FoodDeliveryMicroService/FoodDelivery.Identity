@@ -7,9 +7,8 @@ public sealed class ConfirmEmailCommandValidator
 {
     public ConfirmEmailCommandValidator()
     {
-        RuleFor(x => x.Request.Email)
-            .NotEmpty()
-            .EmailAddress();
+        RuleFor(x => x.Request.userId)
+            .NotEmpty();
 
         RuleFor(x => x.Request.Code)
             .NotEmpty()

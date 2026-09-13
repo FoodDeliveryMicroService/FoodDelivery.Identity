@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Identity.Infrastructure.Identity;
+﻿using Identity.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Identity.Infrastructure.Data.Configurations

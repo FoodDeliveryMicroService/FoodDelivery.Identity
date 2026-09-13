@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using Identity.Application.Common.Interfaces;
-using Identity.Application.Features.Authentication.Dtos.Email;
 using Identity.Domain.Common.Results;
 using Identity.Domain.Email;
 

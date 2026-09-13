@@ -115,7 +115,7 @@ public sealed class TokenProviderService(
     // ============================================================
 
     public async Task<Result<Success>> RevokeTokenAsync(
-        string refreshToken,
+        string refreshToken,Guid? userId,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(refreshToken))
@@ -127,7 +127,8 @@ public sealed class TokenProviderService(
 
         var storedToken = await _context.RefreshTokens
             .FirstOrDefaultAsync(
-                rt => rt.Token == refreshToken,
+                rt => rt.Token == refreshToken &&
+                      rt.UserId == userId.ToString(),
                 cancellationToken);
 
         if (storedToken is null)

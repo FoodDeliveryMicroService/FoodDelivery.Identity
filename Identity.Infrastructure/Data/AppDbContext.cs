@@ -1,6 +1,5 @@
 ﻿using Identity.Application.Common.Interfaces;
 using Identity.Domain.Email;
-using Identity.Domain.Identity;
 using Identity.Domain.Identity.Entities;
 using Identity.Domain.Location;
 using Identity.Infrastructure.Identity;

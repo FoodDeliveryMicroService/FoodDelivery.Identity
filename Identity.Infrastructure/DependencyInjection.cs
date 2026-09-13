@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 using Identity.Application.Common.Interfaces;
 using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Data.Interceptors;
@@ -16,7 +12,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using RabbitMQ.Client;
 
 namespace Identity.Infrastructure
 {
@@ -29,9 +24,9 @@ namespace Identity.Infrastructure
             services
                 .AddDatabase(configuration)
                 .AddCaching()
+                .AddServices(configuration)
                 .AddJwtAuthentication(configuration)
-                .AddJwtAuthorization()
-                .AddServices(configuration);
+                .AddJwtAuthorization();
 
             return services;
         }
@@ -80,7 +75,11 @@ namespace Identity.Infrastructure
                 .ValidateOnStart();
 
             services
-                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddAuthentication(options =>
+                {
+                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                })
                 .AddJwtBearer(options =>
                 {
                     options.RequireHttpsMetadata = false;
