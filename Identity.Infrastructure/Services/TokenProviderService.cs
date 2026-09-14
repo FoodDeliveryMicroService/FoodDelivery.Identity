@@ -7,6 +7,7 @@ using Identity.Application.Features.Identity;
 using Identity.Application.Features.Identity.Dtos;
 using Identity.Domain.Common.Results;
 using Identity.Domain.Identity.Entities;
+using Identity.Domain.Identity.Enums;
 using Identity.Domain.Identity.Errors;
 using Identity.Infrastructure.Identity;
 using Identity.Infrastructure.Settings;
@@ -77,6 +78,9 @@ public sealed class TokenProviderService(
 
         if (user is null)
             return AuthenticationErrors.InvalidRefreshToken;
+
+        if (user.Status == AccountStatus.Suspended)
+            return AuthenticationErrors.AccountSuspended;
 
         var roles = await _userManager.GetRolesAsync(user);
 

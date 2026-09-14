@@ -3,11 +3,14 @@ using Identity.Application.Features.Authentication.Commands.Login;
 using Identity.Application.Features.Authentication.Commands.Logout;
 using Identity.Application.Features.Authentication.Commands.RefreshToken;
 using Identity.Application.Features.Authentication.Commands.RegisterUser;
+using Identity.Application.Features.Authentication.Commands.RequestPasswordReset;
+using Identity.Application.Features.Authentication.Commands.ResetPassword;
 using Identity.Application.Features.Authentication.Dtos.Email;
 using Identity.Application.Features.Authentication.Dtos.Login;
 using Identity.Application.Features.Authentication.Dtos.Logout;
 using Identity.Application.Features.Authentication.Dtos.RefreshToken;
 using Identity.Application.Features.Authentication.Dtos.RegisterUser;
+using Identity.Application.Features.Authentication.Dtos.ResetPassword;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -125,6 +128,44 @@ namespace Identity.API.Controllers
                 onValue: success => OkEnvelope(
                     new { message = "Logged out successfully." },
                     "You have been logged out."
+                ),
+                onError: errors => Problem(errors)
+            );
+        }
+
+
+        [HttpPost("forgot-password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> ForgotPassword(
+            [FromBody] RequestPasswordResetRequest request,
+            CancellationToken cancellationToken)
+        {
+            var command = new RequestPasswordResetCommand(request);
+            var result = await _mediator.Send(command, cancellationToken);
+
+            return result.Match<IActionResult>(
+                onValue: success => OkEnvelope(
+                    new { message = "If this email is registered, a password reset link has been sent." },
+                    "Password reset request processed."
+                ),
+                onError: errors => Problem(errors)
+            );
+        }
+
+        [HttpPost("reset-password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ResetPassword(
+            [FromBody] ResetPasswordRequest request,
+            CancellationToken cancellationToken)
+        {
+            var command = new ResetPasswordCommand(request);
+            var result = await _mediator.Send(command, cancellationToken);
+
+            return result.Match<IActionResult>(
+                onValue: success => OkEnvelope(
+                    new { message = "Password reset successfully." },
+                    "Your password has been updated. You can now log in."
                 ),
                 onError: errors => Problem(errors)
             );

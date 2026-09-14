@@ -146,7 +146,13 @@ namespace Identity.Infrastructure
 
             services.AddScoped<ITokenProvider, TokenProviderService>();
             services.AddScoped<IIdentityService, IdentityService>();
+            services.AddScoped<IAuditLogService, AuditLogService>();
             services.AddHttpContextAccessor();
+
+            services.Configure<DataProtectionTokenProviderOptions>(options =>
+            {
+                options.TokenLifespan = TimeSpan.FromMinutes(30);
+            });
 
             var emailSettings = configuration
                 .GetSection(EmailSettings.SectionName)
