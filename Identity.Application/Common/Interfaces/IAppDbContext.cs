@@ -13,6 +13,7 @@ namespace Identity.Application.Common.Interfaces
         public DbSet<City> Cities {  get; }
         public DbSet<Governorate> Governorates {  get; }
         public DbSet<EmailConfirmation> EmailConfirmations { get; }
+        public DbSet<AuditLog> AuditLogs { get; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }
 }

@@ -17,6 +17,7 @@ namespace Identity.Infrastructure.Data
         public DbSet<Address> Addresses => Set<Address>();
         public DbSet<City> Cities => Set<City>();
         public DbSet<Governorate> Governorates => Set<Governorate>();
+        public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
