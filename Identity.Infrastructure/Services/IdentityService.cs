@@ -1,9 +1,15 @@
 ﻿using System.Security.Cryptography;
 using Identity.Application.Common.Interfaces;
+using Identity.Application.Features.AccountStatus.Dtos;
 using Identity.Application.Features.Authentication.Dtos.Email;
+using Identity.Application.Features.Authentication.Dtos.ResetPassword;
 using Identity.Application.Features.Identity.Dtos;
+using Identity.Application.Features.Profile.Dtos.GetProfile;
+using Identity.Application.Features.RoleManagement.Dtos.ChangeUserRole;
 using Identity.Domain.Common.Results;
 using Identity.Domain.Email;
+using Identity.Domain.Identity;
+using Identity.Domain.Identity.Enums;
 using Identity.Domain.Identity.Errors;
 using Identity.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
@@ -221,8 +227,12 @@ namespace Identity.Infrastructure.Services
             if (user is null)
                 return AuthenticationErrors.InvalidCredentials;
 
+            if (user.Status == AccountStatus.Suspended)
+                return AuthenticationErrors.AccountSuspended;
+
             if (!user.EmailConfirmed)
                 return AuthenticationErrors.AccountNotConfirmed;
+
 
             if (!await _userManager.CheckPasswordAsync(user, password))
                 return AuthenticationErrors.InvalidCredentials;
@@ -233,6 +243,160 @@ namespace Identity.Infrastructure.Services
                 await _userManager.GetRolesAsync(user),
                 await _userManager.GetClaimsAsync(user)
             );
+        }
+
+        public async Task<Result<ChangeUserRoleResponse>> ChangeUserRoleAsync(
+            Guid userId,
+            Role newRole,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user is null)
+                return RoleErrors.UserNotFound;
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            var currentRole = currentRoles.FirstOrDefault();
+
+            if (currentRole is not null &&
+                string.Equals(currentRole, newRole.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                return RoleErrors.SameRole;
+            }
+
+            if (currentRoles.Count > 0)
+            {
+                var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                if (!removeResult.Succeeded)
+                    return RoleErrors.RemovalFailed;
+            }
+
+            var addResult = await _userManager.AddToRoleAsync(user, newRole.ToString());
+            if (!addResult.Succeeded)
+                return RoleErrors.AssignmentFailed;
+
+            return new ChangeUserRoleResponse(
+                user.Id,
+                currentRole ?? "None",
+                newRole.ToString());
+        }
+
+        public async Task<Result<AccountStatusResponse>> SuspendUserAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user is null)
+                return AccountStatusErrors.UserNotFound;
+
+            if (user.Status == AccountStatus.Suspended)
+                return AccountStatusErrors.AlreadySuspended;
+
+            user.Status = AccountStatus.Suspended;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+                return AccountStatusErrors.UpdateFailed;
+
+            return new AccountStatusResponse(user.Id, user.Status.ToString());
+        }
+
+        public async Task<Result<AccountStatusResponse>> ReactivateUserAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user is null)
+                return AccountStatusErrors.UserNotFound;
+
+            if (user.Status == AccountStatus.Active)
+                return AccountStatusErrors.AlreadyActive;
+
+            user.Status = AccountStatus.Active;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+                return AccountStatusErrors.UpdateFailed;
+
+            return new AccountStatusResponse(user.Id, user.Status.ToString());
+        }
+
+        public async Task<Result<ProfileDto>> GetProfileAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user is null)
+                return ProfileErrors.UserNotFound;
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return new ProfileDto(user.Id, user.Email!, user.Name, user.PhoneNumber, roles);
+        }
+
+        public async Task<Result<ProfileDto>> UpdateProfileAsync(
+            Guid userId,
+            string? name,
+            string? phoneNumber,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user is null)
+                return ProfileErrors.UserNotFound;
+
+            if (name is not null)
+                user.Name = name;
+
+            if (phoneNumber is not null)
+                user.PhoneNumber = phoneNumber;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                return updateResult.Errors
+                    .Select(e => Error.Validation("IdentityError", e.Description))
+                    .ToList();
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return new ProfileDto(user.Id, user.Email!, user.Name, user.PhoneNumber, roles);
+        }
+
+        public async Task<Result<PasswordResetTokenDto>> GeneratePasswordResetTokenAsync(
+            string email,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user is null)
+                return Error.NotFound("UserNotFound", "User not found.");
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            return new PasswordResetTokenDto(user.Email!, user.Name ?? user.Email!, token);
+        }
+
+        public async Task<Result<Success>> ResetPasswordAsync(
+            string email,
+            string token,
+            string newPassword,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user is null)
+                return PasswordResetErrors.InvalidOrExpiredToken; // don't reveal whether the email exists
+
+            var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+            if (!result.Succeeded)
+            {
+                if (result.Errors.Any(e => e.Code == "InvalidToken"))
+                    return PasswordResetErrors.InvalidOrExpiredToken;
+
+                return result.Errors
+                    .Select(e => Error.Validation("IdentityError", e.Description))
+                    .ToList();
+            }
+
+            return Result.Success;
         }
     }
 }
