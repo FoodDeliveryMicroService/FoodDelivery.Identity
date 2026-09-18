@@ -3,7 +3,9 @@ using Identity.Application.Common.Interfaces;
 using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Data.Interceptors;
 using Identity.Infrastructure.Identity;
+using Identity.Infrastructure.Policies;
 using Identity.Infrastructure.Services;
+using Identity.Infrastructure.Services.Geocoding;
 using Identity.Infrastructure.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -11,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Identity.Infrastructure
@@ -25,8 +28,10 @@ namespace Identity.Infrastructure
                 .AddDatabase(configuration)
                 .AddCaching()
                 .AddServices(configuration)
+                .AddFluentEmail(configuration)
                 .AddJwtAuthentication(configuration)
-                .AddJwtAuthorization();
+                .AddJwtAuthorization()
+                .AddGeocoding(configuration);
 
             return services;
         }
@@ -145,15 +150,21 @@ namespace Identity.Infrastructure
             .AddDefaultTokenProviders();
 
             services.AddScoped<ITokenProvider, TokenProviderService>();
-            services.AddScoped<IIdentityService, IdentityService>();
-            services.AddScoped<IAuditLogService, AuditLogService>();
-            services.AddHttpContextAccessor();
-
             services.Configure<DataProtectionTokenProviderOptions>(options =>
             {
                 options.TokenLifespan = TimeSpan.FromMinutes(30);
             });
 
+            services.AddScoped<IIdentityService, IdentityService>();
+            services.AddScoped<IAuditLogService, AuditLogService>();
+            services.AddHttpContextAccessor();
+
+            return services;
+        }
+       
+        private static IServiceCollection AddFluentEmail(this IServiceCollection services,
+            IConfiguration configuration)
+        {
             var emailSettings = configuration
                 .GetSection(EmailSettings.SectionName)
                 .Get<EmailSettings>()
@@ -169,6 +180,31 @@ namespace Identity.Infrastructure
                     emailSettings.Password);
 
             services.AddScoped<IEmailService, EmailService>();
+
+            return services;
+        }
+        private static IServiceCollection AddGeocoding(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            services
+                .AddOptions<GeocodingSettings>()
+                .Bind(configuration.GetSection(GeocodingSettings.SectionName))
+                .ValidateOnStart();
+
+            services.AddHttpClient<IGeocodingService, GeocodingService>((sp, client) =>
+            {
+                var settings = sp.GetRequiredService<IOptions<GeocodingSettings>>().Value;
+
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(settings.UserAgent);
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
+
+            services.AddOptions<AddressSettings>()
+                .Bind(configuration.GetSection(AddressSettings.SectionName))
+                .ValidateOnStart();
+
+            services.AddScoped<IAddressPolicy, AddressPolicy>();
 
             return services;
         }
