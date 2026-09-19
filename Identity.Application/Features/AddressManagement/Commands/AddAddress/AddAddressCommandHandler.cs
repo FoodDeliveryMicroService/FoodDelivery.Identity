@@ -1,5 +1,5 @@
 ﻿using Identity.Application.Common.Interfaces;
-using Identity.Application.Features.AddressManagement.Dtos.AddAddress;
+using Identity.Application.Features.AddressManagement.Dtos;
 using Identity.Domain.Common.Results;
 using Identity.Domain.Location;
 using MediatR;

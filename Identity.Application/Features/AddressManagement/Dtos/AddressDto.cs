@@ -1,4 +1,4 @@
-﻿namespace Identity.Application.Features.AddressManagement.Dtos.AddAddress;
+﻿namespace Identity.Application.Features.AddressManagement.Dtos;
 
 public sealed record AddressDto(
     Guid Id,
