@@ -6,23 +6,27 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Identity.Application.Features.AddressManagement.Commands.AddAddress;
+namespace Identity.Application.Features.AddressManagement.Commands.UpdateAddress;
 
-public sealed class AddAddressCommandHandler(
+public sealed class UpdateAddressCommandHandler(
     IAppDbContext context,
-    IUser currentUser,
-    ILogger<AddAddressCommandHandler> logger)
-    : IRequestHandler<AddAddressCommand, Result<AddressDto>>
+    ILogger<UpdateAddressCommandHandler> logger)
+    : IRequestHandler<UpdateAddressCommand, Result<AddressDto>>
 {
     public async Task<Result<AddressDto>> Handle(
-        AddAddressCommand command,
+        UpdateAddressCommand command,
         CancellationToken cancellationToken)
     {
-        if (currentUser.Id is null)
-            return Error.Unauthorized("Address.Unauthorized", "User is not authenticated.");
-
-        var customerId = currentUser.Id.Value;
         var request = command.Request;
+
+        var address = await context.Addresses
+            .FirstOrDefaultAsync(a => a.Id == command.AddressId, cancellationToken);
+
+        if (address is null)
+            return AddressErrors.NotFound;
+
+        if (address.CustomerId != command.CustomerId)
+            return AddressErrors.Unauthorized;
 
         var city = await context.Cities
             .FirstOrDefaultAsync(c => c.Id == request.CityId, cancellationToken);
@@ -30,7 +34,6 @@ public sealed class AddAddressCommandHandler(
         if (city is null)
             return AddressErrors.InvalidCity;
 
-        // FR-10 acceptance criteria: City لازم تكون تابعة للـ Governorate المختارة
         if (city.GovernorateId != request.GovernorateId)
             return AddressErrors.InvalidLocation;
 
@@ -40,9 +43,7 @@ public sealed class AddAddressCommandHandler(
         if (governorate is null)
             return AddressErrors.InvalidGovernorate;
 
-        var addressResult = Address.Create(
-            Guid.NewGuid(),
-            customerId,
+        var updateResult = address.Update(
             request.Label,
             request.GovernorateId,
             request.CityId,
@@ -52,31 +53,10 @@ public sealed class AddAddressCommandHandler(
             request.Apartment,
             request.Landmark,
             request.Latitude,
-            request.Longitude,
-            request.IsDefault);
+            request.Longitude);
 
-        if (addressResult.IsError)
-            return addressResult.Errors;
-
-        var address = addressResult.Value;
-
-        // لو العنوان الجديد Default، لازم نشيل الـ Default القديم
-        if (request.IsDefault)
-        {
-            var existingDefault = await context.Addresses
-                .FirstOrDefaultAsync(
-                    a => a.CustomerId == customerId && a.IsDefault,
-                    cancellationToken);
-
-            if (existingDefault is not null)
-            {
-                var removeResult = existingDefault.RemoveDefault();
-                if (removeResult.IsError)
-                    return removeResult.Errors;
-            }
-        }
-
-        context.Addresses.Add(address);
+        if (updateResult.IsError)
+            return updateResult.Errors;
 
         try
         {
@@ -86,14 +66,14 @@ public sealed class AddAddressCommandHandler(
         {
             logger.LogWarning(
                 "Duplicate address label '{Label}' for customer {CustomerId}",
-                request.Label, customerId);
+                request.Label, command.CustomerId);
 
             return AddressErrors.DuplicateLabel;
         }
 
         logger.LogInformation(
-            "Address {AddressId} created for customer {CustomerId}",
-            address.Id, customerId);
+            "Address {AddressId} updated for customer {CustomerId}",
+            address.Id, command.CustomerId);
 
         return new AddressDto(
             address.Id,

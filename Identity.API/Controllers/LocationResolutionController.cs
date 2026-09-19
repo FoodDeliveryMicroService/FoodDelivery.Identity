@@ -1,4 +1,5 @@
-﻿using Identity.Application.Features.LocationResolution.Dtos.ResolveLocation;
+﻿using Identity.Application.Features.AddressManagement.Queries.ResolveAddressById;
+using Identity.Application.Features.LocationResolution.Dtos.ResolveLocation;
 using Identity.Application.Features.LocationResolution.Queries.ResolveCurrentLocation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -34,6 +35,30 @@ namespace Identity.API.Controllers
 
             return result.Match<IActionResult>(
                 onValue: response => OkEnvelope(response, "Location resolved successfully."),
+                onError: errors => Problem(errors)
+            );
+        }
+
+        /// <summary>
+        /// Internal service-to-service endpoint (FR-17). Used by the Order Service
+        /// to resolve a customer's AddressId into full address details at checkout.
+        /// TODO: replace [Authorize(Policy = "InternalService")] with a proper
+        /// service-to-service auth scheme (API key header or client-credentials JWT)
+        /// once decided — don't leave this reachable by normal customer tokens.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("{addressId:guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ResolveAddress(
+            Guid addressId,
+            [FromQuery] Guid customerId,
+            CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new ResolveAddressByIdQuery(addressId, customerId), cancellationToken);
+
+            return result.Match<IActionResult>(
+                onValue: address => OkEnvelope(address, "Address resolved successfully."),
                 onError: errors => Problem(errors)
             );
         }
