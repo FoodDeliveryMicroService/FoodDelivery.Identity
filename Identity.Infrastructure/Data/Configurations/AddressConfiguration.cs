@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Identity.Domain.Location;
+﻿using Identity.Domain.Location;
 using Identity.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -37,7 +32,7 @@ namespace Identity.Infrastructure.Data.Configurations
                 .HasMaxLength(20);
 
             builder.Property(x => x.Apartment)
-                .HasMaxLength(20);
+                .HasMaxLength(50);
 
             builder.Property(x => x.Landmark)
                 .HasMaxLength(200);

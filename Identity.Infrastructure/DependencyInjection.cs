@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 using Identity.Application.Common.Interfaces;
 using Identity.Infrastructure.Data;
 using Identity.Infrastructure.Data.Interceptors;
 using Identity.Infrastructure.Identity;
+using Identity.Infrastructure.Policies;
 using Identity.Infrastructure.Services;
+using Identity.Infrastructure.Services.Geocoding;
 using Identity.Infrastructure.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -15,8 +13,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using RabbitMQ.Client;
 
 namespace Identity.Infrastructure
 {
@@ -29,9 +27,11 @@ namespace Identity.Infrastructure
             services
                 .AddDatabase(configuration)
                 .AddCaching()
+                .AddServices(configuration)
+                .AddFluentEmail(configuration)
                 .AddJwtAuthentication(configuration)
                 .AddJwtAuthorization()
-                .AddServices(configuration);
+                .AddGeocoding(configuration);
 
             return services;
         }
@@ -80,7 +80,11 @@ namespace Identity.Infrastructure
                 .ValidateOnStart();
 
             services
-                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddAuthentication(options =>
+                {
+                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                })
                 .AddJwtBearer(options =>
                 {
                     options.RequireHttpsMetadata = false;
@@ -131,13 +135,77 @@ namespace Identity.Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.AddIdentity<AppUser, IdentityRole<Guid>>()
-                .AddEntityFrameworkStores<AppDbContext>()
-                .AddDefaultTokenProviders();
+            services.AddIdentity<AppUser, IdentityRole<Guid>>(options =>
+            {
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequiredLength = 8;
+                options.Password.RequiredUniqueChars = 1;
+                options.User.RequireUniqueEmail = true;
+                options.SignIn.RequireConfirmedEmail = false;
+            })
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddDefaultTokenProviders();
 
             services.AddScoped<ITokenProvider, TokenProviderService>();
+            services.Configure<DataProtectionTokenProviderOptions>(options =>
+            {
+                options.TokenLifespan = TimeSpan.FromMinutes(30);
+            });
+
             services.AddScoped<IIdentityService, IdentityService>();
+            services.AddScoped<IAuditLogService, AuditLogService>();
             services.AddHttpContextAccessor();
+
+            return services;
+        }
+       
+        private static IServiceCollection AddFluentEmail(this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            var emailSettings = configuration
+                .GetSection(EmailSettings.SectionName)
+                .Get<EmailSettings>()
+                ?? throw new InvalidOperationException(
+                    $"Configuration section '{EmailSettings.SectionName}' is missing.");
+
+            services
+                .AddFluentEmail(emailSettings.SenderEmail, emailSettings.SenderName)
+                .AddSmtpSender(
+                    emailSettings.SmtpServer,
+                    emailSettings.SmtpPort,
+                    emailSettings.Username,
+                    emailSettings.Password);
+
+            services.AddScoped<IEmailService, EmailService>();
+
+            return services;
+        }
+        private static IServiceCollection AddGeocoding(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            services
+                .AddOptions<GeocodingSettings>()
+                .Bind(configuration.GetSection(GeocodingSettings.SectionName))
+                .ValidateOnStart();
+
+            services.AddHttpClient<IGeocodingService, GeocodingService>((sp, client) =>
+            {
+                var settings = sp.GetRequiredService<IOptions<GeocodingSettings>>().Value;
+
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(settings.UserAgent);
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
+
+            services.AddOptions<AddressSettings>()
+                .Bind(configuration.GetSection(AddressSettings.SectionName))
+                .ValidateOnStart();
+
+            services.AddScoped<IAddressPolicy, AddressPolicy>();
+
             return services;
         }
     }

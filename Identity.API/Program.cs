@@ -1,6 +1,7 @@
 using Identity.API;
 using Identity.Application;
 using Identity.Infrastructure;
+using Identity.Infrastructure.Data.Seeders;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,5 +46,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+await LocationDataSeeder.SeedAsync(app.Services);
 
 app.Run();
