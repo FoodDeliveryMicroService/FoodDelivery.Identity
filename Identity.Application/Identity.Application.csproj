@@ -8,8 +8,6 @@
 
   <ItemGroup>
     <Folder Include="Features\AccountStatus\Queries\" />
-    <Folder Include="Features\AddressManagement\Queries\GetAddressById\" />
-    <Folder Include="Features\AddressManagement\Queries\GetMyAddresses\" />
     <Folder Include="Features\Authentication\Queries\" />
     <Folder Include="Features\Identity\Queries\" />
     <Folder Include="Features\RoleManagement\Queries\" />
