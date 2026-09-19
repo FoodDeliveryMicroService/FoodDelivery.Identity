@@ -32,7 +32,7 @@ namespace Identity.Infrastructure.Data.Configurations
                 .HasMaxLength(20);
 
             builder.Property(x => x.Apartment)
-                .HasMaxLength(20);
+                .HasMaxLength(50);
 
             builder.Property(x => x.Landmark)
                 .HasMaxLength(200);
