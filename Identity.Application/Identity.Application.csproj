@@ -7,10 +7,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Features\AccountStatus\Queries\" />
-    <Folder Include="Features\Authentication\Queries\" />
-    <Folder Include="Features\Identity\Queries\" />
-    <Folder Include="Features\RoleManagement\Queries\" />
+    <Compile Remove="Features\AccountStatus\Queries\**" />
+    <Compile Remove="Features\Authentication\Queries\**" />
+    <Compile Remove="Features\Identity\Queries\**" />
+    <Compile Remove="Features\RoleManagement\Queries\**" />
+    <EmbeddedResource Remove="Features\AccountStatus\Queries\**" />
+    <EmbeddedResource Remove="Features\Authentication\Queries\**" />
+    <EmbeddedResource Remove="Features\Identity\Queries\**" />
+    <EmbeddedResource Remove="Features\RoleManagement\Queries\**" />
+    <None Remove="Features\AccountStatus\Queries\**" />
+    <None Remove="Features\Authentication\Queries\**" />
+    <None Remove="Features\Identity\Queries\**" />
+    <None Remove="Features\RoleManagement\Queries\**" />
   </ItemGroup>
 
 	<ItemGroup>
