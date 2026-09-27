@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using FluentValidation;
 using Identity.Application.Common.Behaviors;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,6 +18,10 @@ public static class DependencyInjection
             cfg.AddOpenBehavior(typeof(UnhandledExceptionBehaviour<,>));
             cfg.AddOpenBehavior(typeof(CachingBehavior<,>));
         });
+
+        services.AddValidatorsFromAssembly(
+            Assembly.GetExecutingAssembly(),
+            includeInternalTypes: true);
 
         return services;
     }
