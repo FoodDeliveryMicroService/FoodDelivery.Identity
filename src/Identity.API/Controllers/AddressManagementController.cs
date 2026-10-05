@@ -20,6 +20,8 @@ namespace Identity.API.Controllers
         private readonly IMediator _mediator;
         private readonly IUser _currentUser;
 
+
+
         public AddressManagementController(IMediator mediator, IUser currentUser)
         {
             _mediator = mediator;
